@@ -1,0 +1,427 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Panel administrativo para la gestión de Veterinaria Andy Euceda.">
+<title>Panel administrativo</title>
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="w3-light-grey">
+  <aside class="sidebar" id="sidebar">
+<div class="identity">
+<div class="logo" aria-hidden="true">
+<svg viewBox="0 0 24 24">
+<path d="M12 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2M7.5 7c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2m9 0c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2M12 10c2.2 0 4 1.8 4 4v2c0 2.2-1.8 4-4 4s-4-1.8-4-4v-2c0-2.2 1.8-4 4-4Z"/>
+</svg>
+</div>
+<strong>Veterinaria Andy Euceda</strong>
+<em>Salud y bienestar animal</em>
+<div class="admin-badge">
+<span>AE</span>
+<div>
+<b>Andy Euceda</b>
+<small>Administrador</small>
+</div>
+</div>
+</div>
+    <nav aria-label="Módulos clínicos">
+<p class="nav-label">Módulos clínicos</p>
+<button class="menu-item active" data-menu="mascotas">
+<span class="nav-icon">🐾</span>Mascotas<span class="chevron">›</span>
+</button>
+<div class="submenu open" id="mascotas">
+<a href="#pacientes">Lista de Mascotas</a>
+<a href="#registro">Registro de Pacientes</a>
+<a href="#registro">Actualizar Datos de Mascota</a>
+</div>
+<button class="menu-item" data-menu="cirugias">
+<span class="nav-icon">✂</span>Cirugías<span class="chevron">›</span>
+</button>
+<div class="submenu" id="cirugias">
+<a href="#">Calendario de Cirugías</a>
+<a href="#">Programar Cirugía</a>
+<a href="#">Seguimiento Postoperatorio</a>
+</div>
+<button class="menu-item" data-menu="vacunacion">
+<span class="nav-icon">✚</span>Vacunación<span class="chevron">›</span>
+</button>
+<div class="submenu" id="vacunacion">
+<a href="#">Historial de Vacunación</a>
+<a href="#">Registrar Nueva Vacuna</a>
+<a href="#">Próximas Vacunas</a>
+</div>
+<button class="menu-item" data-menu="farmacia">
+<span class="nav-icon">▣</span>Farmacia<span class="chevron">›</span>
+</button>
+<div class="submenu" id="farmacia">
+<a href="#">Inventario de Farmacia</a>
+<a href="#">Entrada de Medicamentos</a>
+<a href="#">Medicamentos por Vencer</a>
+</div>
+<button class="menu-item" data-menu="facturacion">
+<span class="nav-icon">▤</span>Facturación<span class="chevron">›</span>
+</button>
+<div class="submenu" id="facturacion">
+<a href="#">Nueva Factura</a>
+<a href="#">Historial de Facturas</a>
+<a href="#">Pagos Pendientes</a>
+</div>
+<p class="nav-label system-label">Sistema</p>
+<button class="menu-item" data-menu="configuracion">
+<span class="nav-icon">⚙</span>Configuración<span class="chevron">›</span>
+</button>
+<div class="submenu" id="configuracion">
+<a href="#">Datos de la Clínica</a>
+<a href="#">Usuarios del Sistema</a>
+<a class="danger" href="#" id="logout">Cerrar Sesión</a>
+</div>
+</nav>
+<time class="sidebar-date" id="sidebarDate">
+</time>
+  </aside>
+  <main class="main-content">
+<header class="topbar w3-card">
+<div>
+<h1>Panel Administrativo</h1>
+<p>Veterinaria Andy Euceda · <span id="today">
+</span>
+</p>
+</div>
+<div class="topbar-actions">
+<span class="status">
+<i>
+</i>Sistema Activo</span>
+<button class="icon-button w3-button" title="Notificaciones" aria-label="Notificaciones">♧</button>
+<button class="icon-button w3-button" title="Buscar" aria-label="Buscar">⌕</button>
+</div>
+</header>
+    <div class="content">
+<section class="kpi-grid" aria-label="Resumen de actividad">
+<article class="kpi blue">
+<span class="kpi-icon">🐾</span>
+<div>
+<strong>0</strong>
+<small>Pacientes Activos</small>
+<em>+0 este mes</em>
+</div>
+</article>
+<article class="kpi green">
+<span class="kpi-icon">▣</span>
+<div>
+<strong>0</strong>
+<small>Citas Hoy</small>
+<em>0 pendientes</em>
+</div>
+</article>
+<article class="kpi amber">
+<span class="kpi-icon">✚</span>
+<div>
+<strong>0</strong>
+<small>Vacunas Programadas</small>
+<em>0 esta semana</em>
+</div>
+</article>
+<article class="kpi red">
+<span class="kpi-icon">✂</span>
+<div>
+<strong>0</strong>
+<small>Cirugías Programadas</small>
+<em>0 urgentes</em>
+</div>
+</article>
+</section>
+      <section class="panel w3-card" id="registro" hidden>
+<div class="panel-heading">
+<span>🐾</span>
+<div>
+<h2>Registro de Pacientes</h2>
+<p>Módulo · Mascotas › Registro de Pacientes</p>
+</div>
+    <button class="secondary w3-button" type="button" id="backToPatients">Volver a pacientes</button>
+</div>
+<form id="patientForm" novalidate>
+<div class="form-grid two">
+<label>Nombre de la mascota *<input name="nombre" placeholder="Ej. Max, Luna, Rocky...">
+<small class="error">
+</small>
+</label>
+<label>Especie *<select name="especie">
+<option value="">Seleccionar especie</option>
+<option>Perro</option>
+<option>Gato</option>
+<option>Ave</option>
+<option>Conejo</option>
+<option>Reptil</option>
+<option>Roedor</option>
+<option>Otro</option>
+</select>
+<small class="error">
+</small>
+</label>
+</div>
+<div class="form-grid three">
+<label>Raza *<input name="raza" placeholder="Ej. Golden Retriever...">
+<small class="error">
+</small>
+</label>
+<label>Edad (años)<input name="edad" type="number" min="0" max="50" placeholder="Ej. 3">
+</label>
+<label>Peso actual (kg) *<input name="peso_actual" type="number" min="0.1" max="300" step="0.1" placeholder="Ej. 8.5">
+<small class="error">
+</small>
+</label>
+</div>
+<div class="form-grid two">
+<label>Color o señas físicas *<textarea name="color_senas" rows="4" placeholder="Describa el color, manchas, cicatrices u otras señas físicas...">
+</textarea>
+<small class="error">
+</small>
+</label>
+<label>Nombre del responsable *<input name="responsable" placeholder="Nombre completo del responsable">
+<small class="error">
+</small>
+</label>
+</div>
+<div class="form-grid one">
+<label>Teléfono de emergencia *<input name="telefono_emergencia" type="tel" placeholder="Ej. 9999-9999">
+<small class="error">
+</small>
+</label>
+</div>
+<div class="form-actions">
+<button class="primary w3-button" type="submit">▣ Guardar Registro</button>
+<button class="secondary w3-button" type="button" id="clearForm">⌫ Limpiar</button>
+</div>
+<div class="success" id="success" role="status">
+</div>
+</form>
+</section>
+      <section class="panel w3-card" id="pacientes">
+<div class="panel-heading table-heading">
+<span>☷</span>
+<div>
+<p>Módulo · Mascotas › Lista de Mascotas</p>
+</div>
+<b id="recordCount">0 registros</b>
+    <button class="primary w3-button" type="button" id="openPatientForm">+ Nuevo paciente</button>
+</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>#ID</th>
+<th>Nombre</th>
+<th>Especie</th>
+<th>Raza</th>
+<th>Peso</th>
+<th>Propietario</th>
+<th>Estado</th>
+<th>Fecha ingreso</th>
+</tr>
+</thead>
+<tbody id="patientRows">
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<footer>© <span id="year">
+</span> Veterinaria Andy Euceda · Sistema de Gestión Veterinaria · v1.0.0</footer>
+</main>
+  <script>
+    class ClinicApp {
+      constructor() {
+        this.date = new Date();
+        this.dateText = this.date.toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' });
+        this.apiUrl = './api.php';
+        this.patientView = document.querySelector('#pacientes');
+        this.formView = document.querySelector('#registro');
+        this.form = document.querySelector('#patientForm');
+        this.successMessage = document.querySelector('#success');
+        this.recordCount = document.querySelector('#recordCount');
+        this.patientRows = document.querySelector('#patientRows');
+        this.openPatientButton = document.querySelector('#openPatientForm');
+        this.backToPatientsButton = document.querySelector('#backToPatients');
+        this.clearFormButton = document.querySelector('#clearForm');
+      }
+
+      init() {
+        if (!this.form) {
+          console.error('Formulario de registro no encontrado en el DOM.');
+          return;
+        }
+
+        console.log('ClinicApp init', {
+          form: !!this.form,
+          patientView: !!this.patientView,
+          formView: !!this.formView,
+          apiUrl: this.apiUrl,
+        });
+
+        this.setDate();
+        this.addEventListeners();
+        this.handleHashChange();
+      }
+
+      setDate() {
+        document.querySelector('#today').textContent = this.dateText;
+        document.querySelector('#sidebarDate').textContent = this.dateText;
+        document.querySelector('#year').textContent = this.date.getFullYear();
+      }
+
+      addEventListeners() {
+        document.querySelectorAll('.menu-item').forEach(button => button.addEventListener('click', () => {
+          const menu = document.getElementById(button.dataset.menu);
+          document.querySelectorAll('.submenu').forEach(item => item !== menu && item.classList.remove('open'));
+          document.querySelectorAll('.menu-item').forEach(item => item !== button && item.classList.remove('active'));
+          menu.classList.toggle('open');
+          button.classList.toggle('active');
+        }));
+
+        this.openPatientButton.addEventListener('click', () => this.showPatientForm());
+        this.backToPatientsButton.addEventListener('click', () => this.showPatientList());
+        document.querySelectorAll('a[href="#registro"]').forEach(link => link.addEventListener('click', event => {
+          event.preventDefault();
+          this.showPatientForm();
+          history.replaceState(null, '', '#registro');
+        }));
+
+        document.querySelector('#logout').addEventListener('click', event => {
+          event.preventDefault();
+          alert('La sesión se cerraría aquí.');
+        });
+
+        this.clearFormButton.addEventListener('click', () => this.clearForm());
+        if (this.form) {
+          this.form.addEventListener('submit', event => this.handleSubmit(event));
+        }
+
+        window.addEventListener('hashchange', () => this.handleHashChange());
+      }
+
+      handleHashChange() {
+        if (window.location.hash === '#registro') {
+          this.showPatientForm();
+        }
+      }
+
+      showPatientForm() {
+        this.patientView.hidden = true;
+        this.formView.hidden = false;
+        this.formView.scrollIntoView({ behavior:'smooth' });
+      }
+
+      showPatientList() {
+        this.formView.hidden = true;
+        this.patientView.hidden = false;
+        this.patientView.scrollIntoView({ behavior:'smooth' });
+      }
+
+      clearForm() {
+        this.form.reset();
+        this.form.querySelectorAll('.error').forEach(error => error.textContent = '');
+        this.successMessage.textContent = '';
+      }
+
+      validateForm() {
+        const required = ['nombre', 'especie', 'raza', 'peso_actual', 'color_senas', 'responsable', 'telefono_emergencia'];
+        let valid = true;
+
+        required.forEach(name => {
+          const input = this.form.elements[name];
+          let error = input.parentElement.querySelector('.error');
+          if (!error) {
+            error = document.createElement('small');
+            error.className = 'error';
+            input.parentElement.appendChild(error);
+          }
+          error.textContent = input.value.trim() ? '' : 'Campo obligatorio';
+          if (!input.value.trim()) valid = false;
+        });
+
+        return valid;
+      }
+
+      async handleSubmit(event) {
+        event.preventDefault();
+        if (!this.validateForm()) return;
+
+        const data = Object.fromEntries(new FormData(this.form));
+        this.successMessage.textContent = 'Guardando expediente...';
+        console.log('handleSubmit data', data);
+
+        try {
+          const response = await fetch(this.apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+          });
+
+          console.log('fetch response', response.status, response.statusText);
+
+          const result = await response.json();
+          console.log('fetch result', result);
+
+          if (!response.ok || !result.ok) {
+            throw new Error(result.mensaje || 'No se pudo guardar el expediente.');
+          }
+
+          this.prependPatientRow(result.id, data);
+          this.updateRecordCount();
+          this.successMessage.textContent = `✓ ${result.mensaje} · ${this.dateText}`;
+          this.form.reset();
+        } catch (error) {
+          console.error('submit error', error);
+          this.successMessage.textContent = `Error: ${error.message}`;
+        }
+      }
+
+      prependPatientRow(id, data) {
+        const row = document.createElement('tr');
+        const badgeClass = ClinicApp.getBadgeClass(data.especie);
+
+        row.innerHTML = `
+          <td>${id}</td>
+          <td><strong>${ClinicApp.escapeHTML(data.nombre)}</strong></td>
+          <td><span class="badge ${badgeClass}">${ClinicApp.escapeHTML(data.especie)}</span></td>
+          <td>${ClinicApp.escapeHTML(data.raza)}</td>
+          <td>${ClinicApp.escapeHTML(data.peso_actual)} kg</td>
+          <td>${ClinicApp.escapeHTML(data.responsable)}</td>
+          <td><span class="badge active">Activo</span></td>
+          <td>${this.dateText}</td>
+        `;
+
+        this.patientRows.prepend(row);
+      }
+
+      updateRecordCount() {
+        const count = this.patientRows.querySelectorAll('tr').length;
+        this.recordCount.textContent = `${count} registros`;
+      }
+
+      static escapeHTML(value) {
+        return String(value).replace(/[&<>'"]/g, character => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        }[character]));
+      }
+
+      static getBadgeClass(especie) {
+        if (especie === 'Perro') return 'dog';
+        if (especie === 'Gato') return 'cat';
+        return 'bird';
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      new ClinicApp().init();
+    });
+  </script>
+</body></html>
+  
