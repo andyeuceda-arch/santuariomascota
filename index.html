@@ -103,7 +103,7 @@
 <article class="kpi blue">
 <span class="kpi-icon">🐾</span>
 <div>
-<strong>0</strong>
+<strong id="activePatientCount">0</strong>
 <small>Pacientes Activos</small>
 <em>+0 este mes</em>
 </div>
@@ -220,12 +220,14 @@
 <th>Propietario</th>
 <th>Estado</th>
 <th>Fecha ingreso</th>
+<th>Acciones</th>
 </tr>
 </thead>
 <tbody id="patientRows">
 </tbody>
 </table>
 </div>
+<div class="pagination" id="pagination" aria-label="Paginación de mascotas"></div>
 </section>
 </div>
 <footer>© <span id="year">
@@ -237,15 +239,21 @@
         this.date = new Date();
         this.dateText = this.date.toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' });
         this.apiUrl = './api.php';
+        this.storageKey = 'clinic-patient-form-draft';
         this.patientView = document.querySelector('#pacientes');
         this.formView = document.querySelector('#registro');
         this.form = document.querySelector('#patientForm');
         this.successMessage = document.querySelector('#success');
+        this.activePatientCount = document.querySelector('#activePatientCount');
         this.recordCount = document.querySelector('#recordCount');
         this.patientRows = document.querySelector('#patientRows');
+        this.pagination = document.querySelector('#pagination');
         this.openPatientButton = document.querySelector('#openPatientForm');
         this.backToPatientsButton = document.querySelector('#backToPatients');
         this.clearFormButton = document.querySelector('#clearForm');
+        this.currentPage = 1;
+        this.pageSize = 5;
+        this.submitButton = this.form ? this.form.querySelector('button[type="submit"]') : null;
       }
 
       init() {
@@ -263,7 +271,103 @@
 
         this.setDate();
         this.addEventListeners();
+        const hasDraft = this.restoreFormDraft();
+        this.loadPatients(this.currentPage);
+        if (!hasDraft && window.location.hash !== '#registro') {
+          this.showPatientList();
+        }
         this.handleHashChange();
+      }
+
+      async loadPatients(page = 1) {
+        try {
+          const response = await fetch(`${this.apiUrl}?page=${page}&limit=${this.pageSize}`, { method: 'GET' });
+          const result = await response.json();
+          if (!response.ok || !result.ok) {
+            throw new Error(result.mensaje || 'No se pudo cargar la lista de mascotas.');
+          }
+
+          this.currentPage = result.page || page;
+          this.renderPatients(result.mascotas || []);
+          this.renderPagination(result.total || 0, this.currentPage, result.limit || this.pageSize);
+          this.updateRecordCount(result.total || 0);
+        } catch (error) {
+          console.error('loadPatients error', error);
+        }
+      }
+
+      renderPatients(mascotas) {
+        this.patientRows.innerHTML = '';
+        mascotas.forEach(mascota => {
+          const row = document.createElement('tr');
+          const badgeClass = ClinicApp.getBadgeClass(mascota.especie);
+          row.innerHTML = `
+            <td>${ClinicApp.escapeHTML(mascota.ID)}</td>
+            <td><strong>${ClinicApp.escapeHTML(mascota.nombre)}</strong></td>
+            <td><span class="badge ${badgeClass}">${ClinicApp.escapeHTML(mascota.especie)}</span></td>
+            <td>${ClinicApp.escapeHTML(mascota.raza)}</td>
+            <td>${ClinicApp.escapeHTML(mascota.peso_actual)} kg</td>
+            <td>${ClinicApp.escapeHTML(mascota.responsable)}</td>
+            <td><span class="badge active">Activo</span></td>
+            <td>${ClinicApp.escapeHTML(mascota.creado_en)}</td>
+            <td>
+              <button class="secondary w3-button edit-btn" type="button" data-id="${ClinicApp.escapeHTML(mascota.ID)}">Editar</button>
+              <button class="danger w3-button delete-btn" type="button" data-id="${ClinicApp.escapeHTML(mascota.ID)}">Eliminar</button>
+            </td>
+          `;
+          this.patientRows.append(row);
+        });
+      }
+
+      renderPagination(total, page, limit) {
+        if (!this.pagination) {
+          return;
+        }
+
+        this.pagination.innerHTML = '';
+        if (total <= limit) {
+          return;
+        }
+
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+        const fragment = document.createDocumentFragment();
+
+        const prevButton = document.createElement('button');
+        prevButton.type = 'button';
+        prevButton.className = 'pagination-btn secondary w3-button';
+        prevButton.textContent = '‹ Anterior';
+        prevButton.disabled = page <= 1;
+        prevButton.addEventListener('click', () => {
+          if (page > 1) {
+            this.loadPatients(page - 1);
+          }
+        });
+        fragment.appendChild(prevButton);
+
+        for (let i = 1; i <= totalPages; i += 1) {
+          const pageButton = document.createElement('button');
+          pageButton.type = 'button';
+          pageButton.className = `pagination-btn w3-button ${i === page ? 'primary' : 'secondary'}`;
+          const start = (i - 1) * limit;
+          const end = Math.min(i * limit, total);
+          pageButton.textContent = `${start}-${end}`;
+          pageButton.addEventListener('click', () => this.loadPatients(i));
+          fragment.appendChild(pageButton);
+        }
+
+        const nextButton = document.createElement('button');
+        nextButton.type = 'button';
+        nextButton.className = 'pagination-btn secondary w3-button';
+        nextButton.textContent = 'Siguiente ›';
+        nextButton.disabled = page >= totalPages;
+        nextButton.addEventListener('click', () => {
+          if (page < totalPages) {
+            this.loadPatients(page + 1);
+          }
+        });
+        fragment.appendChild(nextButton);
+
+        this.pagination.appendChild(fragment);
       }
 
       setDate() {
@@ -294,11 +398,17 @@
           alert('La sesión se cerraría aquí.');
         });
 
-        this.clearFormButton.addEventListener('click', () => this.clearForm());
+        this.clearFormButton.addEventListener('click', () => {
+          this.clearForm();
+          this.resetEditMode();
+        });
         if (this.form) {
           this.form.addEventListener('submit', event => this.handleSubmit(event));
+          this.form.addEventListener('input', () => this.saveFormDraft());
+          this.form.addEventListener('change', () => this.saveFormDraft());
         }
 
+        this.patientRows.addEventListener('click', event => this.handleRowAction(event));
         window.addEventListener('hashchange', () => this.handleHashChange());
       }
 
@@ -320,10 +430,131 @@
         this.patientView.scrollIntoView({ behavior:'smooth' });
       }
 
+      saveFormDraft() {
+        const formData = new FormData(this.form);
+        const data = Object.fromEntries(formData.entries());
+        const hasValues = Object.values(data).some(value => String(value).trim() !== '');
+
+        if (!hasValues) {
+          localStorage.removeItem(this.storageKey);
+          return;
+        }
+
+        localStorage.setItem(this.storageKey, JSON.stringify(data));
+      }
+
+      restoreFormDraft() {
+        const storedDraft = localStorage.getItem(this.storageKey);
+        if (!storedDraft) return false;
+
+        try {
+          const data = JSON.parse(storedDraft);
+          const hasValues = Object.values(data).some(value => String(value).trim() !== '');
+
+          Object.entries(data).forEach(([name, value]) => {
+            const field = this.form.elements[name];
+            if (field) {
+              field.value = String(value);
+            }
+          });
+
+          if (hasValues) {
+            this.showPatientForm();
+            history.replaceState(null, '', '#registro');
+          }
+
+          return hasValues;
+        } catch (error) {
+          console.error('No se pudo restaurar el formulario guardado.', error);
+          return false;
+        }
+      }
+
       clearForm() {
         this.form.reset();
+        localStorage.removeItem(this.storageKey);
         this.form.querySelectorAll('.error').forEach(error => error.textContent = '');
         this.successMessage.textContent = '';
+      }
+
+      handleRowAction(event) {
+        const editButton = event.target.closest('.edit-btn');
+        const deleteButton = event.target.closest('.delete-btn');
+        if (editButton) {
+          const id = editButton.dataset.id;
+          this.loadPatientForEdit(id);
+        }
+
+        if (deleteButton) {
+          const id = deleteButton.dataset.id;
+          this.deletePatient(id);
+        }
+      }
+
+      async loadPatientForEdit(id) {
+        try {
+          const response = await fetch(`${this.apiUrl}?id=${encodeURIComponent(id)}`);
+          const result = await response.json();
+          if (!response.ok || !result.ok) {
+            throw new Error(result.mensaje || 'No se pudo cargar la mascota para edición.');
+          }
+
+          const mascota = result.mascota;
+          if (!mascota) {
+            throw new Error('Mascota no encontrada.');
+          }
+
+          this.prepareFormForEdit(mascota);
+        } catch (error) {
+          console.error('loadPatientForEdit error', error);
+          this.successMessage.textContent = `Error: ${error.message}`;
+        }
+      }
+
+      prepareFormForEdit(mascota) {
+        this.form.elements.nombre.value = mascota.nombre;
+        this.form.elements.especie.value = mascota.especie;
+        this.form.elements.raza.value = mascota.raza;
+        this.form.elements.edad.value = mascota.edad ?? '';
+        this.form.elements.peso_actual.value = mascota.peso_actual;
+        this.form.elements.color_senas.value = mascota.color_senas;
+        this.form.elements.responsable.value = mascota.responsable;
+        this.form.elements.telefono_emergencia.value = mascota.telefono_emergencia;
+        this.editingId = String(mascota.ID);
+        if (this.submitButton) {
+          this.submitButton.textContent = 'Guardar cambios';
+        }
+        this.showPatientForm();
+      }
+
+      resetEditMode() {
+        this.editingId = null;
+        if (this.submitButton) {
+          this.submitButton.textContent = '▣ Guardar Registro';
+        }
+      }
+
+      async deletePatient(id) {
+        if (!confirm('¿Seguro que deseas eliminar este registro?')) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`${this.apiUrl}?id=${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+          });
+          const result = await response.json();
+          if (!response.ok || !result.ok) {
+            throw new Error(result.mensaje || 'No se pudo eliminar la mascota.');
+          }
+
+          await this.loadPatients(this.currentPage);
+          this.updateRecordCount();
+          this.successMessage.textContent = `✓ ${result.mensaje}`;
+        } catch (error) {
+          console.error('deletePatient error', error);
+          this.successMessage.textContent = `Error: ${error.message}`;
+        }
       }
 
       validateForm() {
@@ -354,8 +585,10 @@
         console.log('handleSubmit data', data);
 
         try {
-          const response = await fetch(this.apiUrl, {
-            method: 'POST',
+          const method = this.editingId ? 'PUT' : 'POST';
+          const url = this.editingId ? `${this.apiUrl}?id=${this.editingId}` : this.apiUrl;
+          const response = await fetch(url, {
+            method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
           });
@@ -369,10 +602,18 @@
             throw new Error(result.mensaje || 'No se pudo guardar el expediente.');
           }
 
-          this.prependPatientRow(result.id, data);
+          if (this.editingId) {
+            await this.loadPatients();
+            this.resetEditMode();
+          } else {
+            this.prependPatientRow(result.id, data);
+          }
+
           this.updateRecordCount();
           this.successMessage.textContent = `✓ ${result.mensaje} · ${this.dateText}`;
           this.form.reset();
+          this.resetEditMode();
+          localStorage.removeItem(this.storageKey);
         } catch (error) {
           console.error('submit error', error);
           this.successMessage.textContent = `Error: ${error.message}`;
@@ -397,9 +638,11 @@
         this.patientRows.prepend(row);
       }
 
-      updateRecordCount() {
-        const count = this.patientRows.querySelectorAll('tr').length;
+      updateRecordCount(count = this.patientRows.querySelectorAll('tr').length) {
         this.recordCount.textContent = `${count} registros`;
+        if (this.activePatientCount) {
+          this.activePatientCount.textContent = String(count);
+        }
       }
 
       static escapeHTML(value) {

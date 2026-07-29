@@ -479,6 +479,24 @@ hr {
 .table-wrap {
   overflow-x:auto;
 }
+.pagination {
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:16px;
+}
+.pagination-btn {
+  min-width:82px;
+  padding:8px 12px;
+  border-radius:8px;
+  font:600 12px Arial;
+}
+.pagination-btn:disabled {
+  opacity:0.6;
+  cursor:not-allowed;
+  transform:none;
+}
 .table-wrap table {
   width:100%;
   border-collapse:collapse;

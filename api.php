@@ -142,6 +142,37 @@ final class RegistroMascota extends Mascota
         ]);
         return (int) $pdo->lastInsertId();
     }
+
+    public function actualizar(PDO $pdo, int $id): void
+    {
+        $consulta = $pdo->prepare(
+            'UPDATE mascotas SET
+                nombre = :nombre,
+                especie = :especie,
+                raza = :raza,
+                edad = :edad,
+                peso_actual = :peso_actual,
+                color_senas = :color_senas,
+                responsable = :responsable,
+                telefono_emergencia = :telefono_emergencia
+            WHERE ID = :id'
+        );
+        $consulta->execute([
+            ':nombre' => $this->getNombre(),
+            ':especie' => $this->getEspecie(),
+            ':raza' => $this->getRaza(),
+            ':edad' => $this->getEdad(),
+            ':peso_actual' => $this->getPesoActual(),
+            ':color_senas' => $this->getColorSenas(),
+            ':responsable' => $this->getResponsable(),
+            ':telefono_emergencia' => $this->getTelefonoEmergencia(),
+            ':id' => $id,
+        ]);
+
+        if ($consulta->rowCount() === 0) {
+            throw new RuntimeException('No se encontró la mascota indicada.');
+        }
+    }
 }
 
 try {
@@ -149,14 +180,74 @@ try {
     $pdo = $conexion->obtenerPDO();
 
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-        $consulta = $pdo->query('SELECT ID, nombre, especie, raza, edad, peso_actual, color_senas, responsable, telefono_emergencia, creado_en FROM mascotas ORDER BY ID DESC');
-        echo json_encode(['ok' => true, 'mascotas' => $consulta->fetchAll()], JSON_UNESCAPED_UNICODE);
+        $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+        if ($id !== null && $id !== false) {
+            $consulta = $pdo->prepare('SELECT ID, nombre, especie, raza, edad, peso_actual, color_senas, responsable, telefono_emergencia, creado_en FROM mascotas WHERE ID = :id');
+            $consulta->execute([':id' => $id]);
+            $mascota = $consulta->fetch();
+            if (!$mascota) {
+                http_response_code(404);
+                echo json_encode(['ok' => false, 'mensaje' => 'Mascota no encontrada.'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+            echo json_encode(['ok' => true, 'mascota' => $mascota], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $page = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT);
+        $limit = filter_input(INPUT_GET, 'limit', FILTER_VALIDATE_INT);
+
+        $page = $page !== null && $page !== false && $page > 0 ? (int) $page : 1;
+        $limit = $limit !== null && $limit !== false && $limit > 0 ? (int) $limit : 5;
+        $offset = ($page - 1) * $limit;
+
+        $totalConsulta = $pdo->query('SELECT COUNT(*) AS total FROM mascotas');
+        $total = (int) $totalConsulta->fetchColumn();
+
+        $consulta = $pdo->prepare(
+            'SELECT ID, nombre, especie, raza, edad, peso_actual, color_senas, responsable, telefono_emergencia, creado_en
+            FROM mascotas
+            ORDER BY ID DESC
+            LIMIT :limit OFFSET :offset'
+        );
+        $consulta->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $consulta->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $consulta->execute();
+
+        $totalPaginas = $total > 0 ? (int) ceil($total / $limit) : 1;
+
+        echo json_encode(
+            [
+                'ok' => true,
+                'mascotas' => $consulta->fetchAll(),
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'totalPages' => $totalPaginas,
+            ],
+            JSON_UNESCAPED_UNICODE
+        );
         exit;
     }
 
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        http_response_code(405);
-        echo json_encode(['ok' => false, 'mensaje' => 'Método no permitido.'], JSON_UNESCAPED_UNICODE);
+    if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+        $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+        if ($id === null || $id === false) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'mensaje' => 'ID de mascota inválido.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $consulta = $pdo->prepare('DELETE FROM mascotas WHERE ID = :id');
+        $consulta->execute([':id' => $id]);
+
+        if ($consulta->rowCount() === 0) {
+            http_response_code(404);
+            echo json_encode(['ok' => false, 'mensaje' => 'Mascota no encontrada.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        echo json_encode(['ok' => true, 'mensaje' => 'Mascota eliminada correctamente.'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -176,6 +267,25 @@ try {
         limpiarDato($entrada['responsable'] ?? ''),
         limpiarDato($entrada['telefono_emergencia'] ?? '')
     );
+
+    if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
+        $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+        if ($id === null || $id === false) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'mensaje' => 'ID de mascota inválido.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $mascota->actualizar($pdo, $id);
+        echo json_encode(['ok' => true, 'mensaje' => 'Mascota actualizada correctamente.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['ok' => false, 'mensaje' => 'Método no permitido.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 
     $id = $mascota->guardar($pdo);
     http_response_code(201);
